@@ -1,0 +1,19 @@
+namespace MyGame;
+
+table Person {
+  id: long;
+  name: string;
+  email: string;
+  age: int;
+  height: float;
+  is_verified: bool;
+  skills: [string];
+  location: Location;
+}
+
+table Location {
+  latitude: double;
+  longitude: double;
+}
+
+root_type Person;
