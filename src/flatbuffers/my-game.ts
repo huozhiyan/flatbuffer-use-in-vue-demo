@@ -4,3 +4,4 @@
 
 export { Location, LocationT } from './my-game/location.js';
 export { Person, PersonT } from './my-game/person.js';
+export { PersonList, PersonListT } from './my-game/person-list.js';

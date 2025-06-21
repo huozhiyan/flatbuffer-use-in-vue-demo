@@ -1,19 +1,28 @@
+// 定义命名空间为 MyGame，所有类型都归属于该命名空间
 namespace MyGame;
 
+// 定义 Person 表，表示一个人的信息
 table Person {
-  id: long;
-  name: string;
-  email: string;
-  age: int;
-  height: float;
-  is_verified: bool;
-  skills: [string];
-  location: Location;
+  id: long;              // 用户ID，long类型（64位整数）
+  name: string;          // 用户名
+  email: string;         // 邮箱
+  age: int;              // 年龄
+  height: float;         // 身高
+  is_verified: bool;     // 是否认证
+  skills: [string];      // 技能列表，字符串数组
+  location: Location;    // 位置信息，引用 Location 表
 }
 
+// 定义 Location 表，表示地理位置
 table Location {
-  latitude: double;
-  longitude: double;
+  latitude: double;      // 纬度，双精度浮点数
+  longitude: double;     // 经度，双精度浮点数
 }
 
+// 定义 PersonList 表，表示一个 Person 的数组
+table PersonList {
+  persons: [Person];     // Person 对象数组
+}
+
+// 指定根类型为 Person
 root_type Person;

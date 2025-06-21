@@ -2,246 +2,197 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
-import * as flatbuffers from "flatbuffers";
+import * as flatbuffers from 'flatbuffers';
 
-import { Location, LocationT } from "../my-game/location.js";
+import { Location, LocationT } from '../my-game/location.js';
+
 
 export class Person implements flatbuffers.IUnpackableObject<PersonT> {
-  bb: flatbuffers.ByteBuffer | null = null;
+  bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
-  __init(i: number, bb: flatbuffers.ByteBuffer): Person {
-    this.bb_pos = i;
-    this.bb = bb;
-    return this;
-  }
+  __init(i:number, bb:flatbuffers.ByteBuffer):Person {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+}
 
-  static getRootAsPerson(bb: flatbuffers.ByteBuffer, obj?: Person): Person {
-    return (obj || new Person()).__init(
-      bb.readInt32(bb.position()) + bb.position(),
-      bb
-    );
-  }
+static getRootAsPerson(bb:flatbuffers.ByteBuffer, obj?:Person):Person {
+  return (obj || new Person()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+}
 
-  static getSizePrefixedRootAsPerson(
-    bb: flatbuffers.ByteBuffer,
-    obj?: Person
-  ): Person {
-    bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
-    return (obj || new Person()).__init(
-      bb.readInt32(bb.position()) + bb.position(),
-      bb
-    );
-  }
+static getSizePrefixedRootAsPerson(bb:flatbuffers.ByteBuffer, obj?:Person):Person {
+  bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
+  return (obj || new Person()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+}
 
-  id(): bigint {
-    const offset = this.bb!.__offset(this.bb_pos, 4);
-    return offset ? this.bb!.readInt64(this.bb_pos + offset) : BigInt("0");
-  }
+id():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.readInt64(this.bb_pos + offset) : BigInt('0');
+}
 
-  name(): string | null;
-  name(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
-  name(optionalEncoding?: any): string | Uint8Array | null {
-    const offset = this.bb!.__offset(this.bb_pos, 6);
-    return offset
-      ? this.bb!.__string(this.bb_pos + offset, optionalEncoding)
-      : null;
-  }
+name():string|null
+name(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+name(optionalEncoding?:any):string|Uint8Array|null {
+  const offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+}
 
-  email(): string | null;
-  email(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
-  email(optionalEncoding?: any): string | Uint8Array | null {
-    const offset = this.bb!.__offset(this.bb_pos, 8);
-    return offset
-      ? this.bb!.__string(this.bb_pos + offset, optionalEncoding)
-      : null;
-  }
+email():string|null
+email(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+email(optionalEncoding?:any):string|Uint8Array|null {
+  const offset = this.bb!.__offset(this.bb_pos, 8);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+}
 
-  age(): number {
-    const offset = this.bb!.__offset(this.bb_pos, 10);
-    return offset ? this.bb!.readInt32(this.bb_pos + offset) : 0;
-  }
+age():number {
+  const offset = this.bb!.__offset(this.bb_pos, 10);
+  return offset ? this.bb!.readInt32(this.bb_pos + offset) : 0;
+}
 
-  height(): number {
-    const offset = this.bb!.__offset(this.bb_pos, 12);
-    return offset ? this.bb!.readFloat32(this.bb_pos + offset) : 0.0;
-  }
+height():number {
+  const offset = this.bb!.__offset(this.bb_pos, 12);
+  return offset ? this.bb!.readFloat32(this.bb_pos + offset) : 0.0;
+}
 
-  isVerified(): boolean {
-    const offset = this.bb!.__offset(this.bb_pos, 14);
-    return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
-  }
+isVerified():boolean {
+  const offset = this.bb!.__offset(this.bb_pos, 14);
+  return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
+}
 
-  skills(index: number): string;
-  skills(
-    index: number,
-    optionalEncoding: flatbuffers.Encoding
-  ): string | Uint8Array;
-  skills(index: number, optionalEncoding?: any): string | Uint8Array | null {
-    const offset = this.bb!.__offset(this.bb_pos, 16);
-    return offset
-      ? this.bb!.__string(
-          this.bb!.__vector(this.bb_pos + offset) + index * 4,
-          optionalEncoding
-        )
-      : null;
-  }
+skills(index: number):string
+skills(index: number,optionalEncoding:flatbuffers.Encoding):string|Uint8Array
+skills(index: number,optionalEncoding?:any):string|Uint8Array|null {
+  const offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? this.bb!.__string(this.bb!.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+}
 
-  skillsLength(): number {
-    const offset = this.bb!.__offset(this.bb_pos, 16);
-    return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
-  }
+skillsLength():number {
+  const offset = this.bb!.__offset(this.bb_pos, 16);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+}
 
-  location(obj?: Location): Location | null {
-    const offset = this.bb!.__offset(this.bb_pos, 18);
-    return offset
-      ? (obj || new Location()).__init(
-          this.bb!.__indirect(this.bb_pos + offset),
-          this.bb!
-        )
-      : null;
-  }
+location(obj?:Location):Location|null {
+  const offset = this.bb!.__offset(this.bb_pos, 18);
+  return offset ? (obj || new Location()).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
+}
 
-  static startPerson(builder: flatbuffers.Builder) {
-    builder.startObject(8);
-  }
+static startPerson(builder:flatbuffers.Builder) {
+  builder.startObject(8);
+}
 
-  static addId(builder: flatbuffers.Builder, id: bigint) {
-    builder.addFieldInt64(0, id, BigInt("0"));
-  }
+static addId(builder:flatbuffers.Builder, id:bigint) {
+  builder.addFieldInt64(0, id, BigInt('0'));
+}
 
-  static addName(builder: flatbuffers.Builder, nameOffset: flatbuffers.Offset) {
-    builder.addFieldOffset(1, nameOffset, 0);
-  }
+static addName(builder:flatbuffers.Builder, nameOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(1, nameOffset, 0);
+}
 
-  static addEmail(
-    builder: flatbuffers.Builder,
-    emailOffset: flatbuffers.Offset
-  ) {
-    builder.addFieldOffset(2, emailOffset, 0);
-  }
+static addEmail(builder:flatbuffers.Builder, emailOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, emailOffset, 0);
+}
 
-  static addAge(builder: flatbuffers.Builder, age: number) {
-    builder.addFieldInt32(3, age, 0);
-  }
+static addAge(builder:flatbuffers.Builder, age:number) {
+  builder.addFieldInt32(3, age, 0);
+}
 
-  static addHeight(builder: flatbuffers.Builder, height: number) {
-    builder.addFieldFloat32(4, height, 0.0);
-  }
+static addHeight(builder:flatbuffers.Builder, height:number) {
+  builder.addFieldFloat32(4, height, 0.0);
+}
 
-  static addIsVerified(builder: flatbuffers.Builder, isVerified: boolean) {
-    builder.addFieldInt8(5, +isVerified, +false);
-  }
+static addIsVerified(builder:flatbuffers.Builder, isVerified:boolean) {
+  builder.addFieldInt8(5, +isVerified, +false);
+}
 
-  static addSkills(
-    builder: flatbuffers.Builder,
-    skillsOffset: flatbuffers.Offset
-  ) {
-    builder.addFieldOffset(6, skillsOffset, 0);
-  }
+static addSkills(builder:flatbuffers.Builder, skillsOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(6, skillsOffset, 0);
+}
 
-  static createSkillsVector(
-    builder: flatbuffers.Builder,
-    data: flatbuffers.Offset[]
-  ): flatbuffers.Offset {
-    builder.startVector(4, data.length, 4);
-    for (let i = data.length - 1; i >= 0; i--) {
-      builder.addOffset(data[i]!);
-    }
-    return builder.endVector();
+static createSkillsVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
+  builder.startVector(4, data.length, 4);
+  for (let i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]!);
   }
+  return builder.endVector();
+}
 
-  static startSkillsVector(builder: flatbuffers.Builder, numElems: number) {
-    builder.startVector(4, numElems, 4);
-  }
+static startSkillsVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(4, numElems, 4);
+}
 
-  static addLocation(
-    builder: flatbuffers.Builder,
-    locationOffset: flatbuffers.Offset
-  ) {
-    builder.addFieldOffset(7, locationOffset, 0);
-  }
+static addLocation(builder:flatbuffers.Builder, locationOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(7, locationOffset, 0);
+}
 
-  static endPerson(builder: flatbuffers.Builder): flatbuffers.Offset {
-    const offset = builder.endObject();
-    return offset;
-  }
+static endPerson(builder:flatbuffers.Builder):flatbuffers.Offset {
+  const offset = builder.endObject();
+  return offset;
+}
 
-  static finishPersonBuffer(
-    builder: flatbuffers.Builder,
-    offset: flatbuffers.Offset
-  ) {
-    builder.finish(offset);
-  }
+static finishPersonBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
+  builder.finish(offset);
+}
 
-  static finishSizePrefixedPersonBuffer(
-    builder: flatbuffers.Builder,
-    offset: flatbuffers.Offset
-  ) {
-    builder.finish(offset, undefined, true);
-  }
+static finishSizePrefixedPersonBuffer(builder:flatbuffers.Builder, offset:flatbuffers.Offset) {
+  builder.finish(offset, undefined, true);
+}
 
-  unpack(): PersonT {
-    return new PersonT(
-      this.id(),
-      this.name(),
-      this.email(),
-      this.age(),
-      this.height(),
-      this.isVerified(),
-      this.bb!.createScalarList<string>(
-        this.skills.bind(this),
-        this.skillsLength()
-      ),
-      this.location() !== null ? this.location()!.unpack() : null
-    );
-  }
 
-  unpackTo(_o: PersonT): void {
-    _o.id = this.id();
-    _o.name = this.name();
-    _o.email = this.email();
-    _o.age = this.age();
-    _o.height = this.height();
-    _o.isVerified = this.isVerified();
-    _o.skills = this.bb!.createScalarList<string>(
-      this.skills.bind(this),
-      this.skillsLength()
-    );
-    _o.location = this.location() !== null ? this.location()!.unpack() : null;
-  }
+unpack(): PersonT {
+  return new PersonT(
+    this.id(),
+    this.name(),
+    this.email(),
+    this.age(),
+    this.height(),
+    this.isVerified(),
+    this.bb!.createScalarList<string>(this.skills.bind(this), this.skillsLength()),
+    (this.location() !== null ? this.location()!.unpack() : null)
+  );
+}
+
+
+unpackTo(_o: PersonT): void {
+  _o.id = this.id();
+  _o.name = this.name();
+  _o.email = this.email();
+  _o.age = this.age();
+  _o.height = this.height();
+  _o.isVerified = this.isVerified();
+  _o.skills = this.bb!.createScalarList<string>(this.skills.bind(this), this.skillsLength());
+  _o.location = (this.location() !== null ? this.location()!.unpack() : null);
+}
 }
 
 export class PersonT implements flatbuffers.IGeneratedObject {
-  constructor(
-    public id: bigint = BigInt("0"),
-    public name: string | Uint8Array | null = null,
-    public email: string | Uint8Array | null = null,
-    public age: number = 0,
-    public height: number = 0.0,
-    public isVerified: boolean = false,
-    public skills: string[] = [],
-    public location: LocationT | null = null
-  ) {}
+constructor(
+  public id: bigint = BigInt('0'),
+  public name: string|Uint8Array|null = null,
+  public email: string|Uint8Array|null = null,
+  public age: number = 0,
+  public height: number = 0.0,
+  public isVerified: boolean = false,
+  public skills: (string)[] = [],
+  public location: LocationT|null = null
+){}
 
-  pack(builder: flatbuffers.Builder): flatbuffers.Offset {
-    const name = this.name !== null ? builder.createString(this.name!) : 0;
-    const email = this.email !== null ? builder.createString(this.email!) : 0;
-    const skills = Person.createSkillsVector(
-      builder,
-      builder.createObjectOffsetList(this.skills)
-    );
-    const location = this.location !== null ? this.location!.pack(builder) : 0;
 
-    Person.startPerson(builder);
-    Person.addId(builder, this.id);
-    Person.addName(builder, name);
-    Person.addEmail(builder, email);
-    Person.addAge(builder, this.age);
-    Person.addHeight(builder, this.height);
-    Person.addIsVerified(builder, this.isVerified);
-    Person.addSkills(builder, skills);
-    Person.addLocation(builder, location);
+pack(builder:flatbuffers.Builder): flatbuffers.Offset {
+  const name = (this.name !== null ? builder.createString(this.name!) : 0);
+  const email = (this.email !== null ? builder.createString(this.email!) : 0);
+  const skills = Person.createSkillsVector(builder, builder.createObjectOffsetList(this.skills));
+  const location = (this.location !== null ? this.location!.pack(builder) : 0);
 
-    return Person.endPerson(builder);
-  }
+  Person.startPerson(builder);
+  Person.addId(builder, this.id);
+  Person.addName(builder, name);
+  Person.addEmail(builder, email);
+  Person.addAge(builder, this.age);
+  Person.addHeight(builder, this.height);
+  Person.addIsVerified(builder, this.isVerified);
+  Person.addSkills(builder, skills);
+  Person.addLocation(builder, location);
+
+  return Person.endPerson(builder);
+}
 }

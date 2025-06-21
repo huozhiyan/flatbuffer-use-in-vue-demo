@@ -1,44 +1,34 @@
 <script setup lang="ts">
+// 引入 Vue 的响应式 API
 import { ref, reactive } from "vue";
+// 引入 flatbuffers 库
 import * as flatbuffers from "flatbuffers";
+// 引入通过 flatc 生成的类型定义
 import { MyGame } from "../flatbuffers/person";
 
-// 原始数据，模拟一个用户对象
-const originalData = reactive({
-  id: 1234567890123, // 注意：大整数，FlatBuffers 需要用 BigInt 处理
-  name: "张伟",
-  email: "zhang.wei@example.com",
-  age: 32,
-  height: 1.78,
-  isVerified: true,
-  skills: ["JavaScript", "TypeScript", "Vue", "Node.js"],
-  location: {
-    latitude: 31.2304,
-    longitude: 121.4737,
-  },
-});
+// 生成模拟数据集，count 为数据条数
+const generateDataset = (count: number) => {
+  const dataset = [];
+  for (let i = 0; i < count; i++) {
+    dataset.push({
+      id: i + 1000000000000, // 大整数ID
+      name: `User${i}`, // 用户名
+      email: `user${i}@example.com`, // 邮箱
+      age: 20 + (i % 30), // 年龄
+      height: 1.6 + (i % 40) / 100, // 身高
+      isVerified: i % 3 === 0, // 是否认证
+      skills: ["JS", "TS", `Skill${i % 10}`], // 技能
+      location: {
+        latitude: 30 + (i % 100) / 100, // 纬度
+        longitude: 120 + (i % 100) / 100, // 经度
+      },
+    });
+  }
+  return dataset;
+};
 
-// const generateDataset = (count: number) => {
-//   const dataset = [];
-//   for (let i = 0; i < count; i++) {
-//     dataset.push({
-//       id: i + 1000000000000,
-//       name: `User${i}`,
-//       email: `user${i}@example.com`,
-//       age: 20 + (i % 30),
-//       height: 1.6 + (i % 40) / 100,
-//       isVerified: i % 3 === 0,
-//       skills: ["JS", "TS", `Skill${i % 10}`],
-//       location: {
-//         latitude: 30 + (i % 100) / 100,
-//         longitude: 120 + (i % 100) / 100,
-//       },
-//     });
-//   }
-//   return dataset;
-// };
-
-// const originalDataList = generateDataset(1);
+// 生成 10000 条原始数据
+const originalDataList = generateDataset(10000);
 
 // 用于存储序列化和反序列化的结果
 const serializedData = ref<Uint8Array | null>(null); // FlatBuffer 二进制数据
@@ -59,80 +49,123 @@ const performanceResults = reactive({
 // 序列化为 FlatBuffer 二进制
 const serializeToFlatBuffer = () => {
   const startTime = performance.now();
-
-  // 创建 FlatBuffer 构建器
+  // 创建一个新的 FlatBuffers 构建器（Builder）对象，并为它分配初始的缓冲区大小为 1024 字节
   const builder = new flatbuffers.Builder(1024);
-  // 创建字符串字段
-  const nameOffset = builder.createString(originalData.name);
-  const emailOffset = builder.createString(originalData.email);
 
-  // 创建技能字符串数组
-  const skillsOffsets: flatbuffers.Offset[] = [];
-  originalData.skills.forEach((skill) => {
-    skillsOffsets.push(builder.createString(skill));
-  });
-  // 创建技能向量（注意顺序是否需要 reverse，视生成代码而定）
-  const skillsVector = MyGame.Person.createSkillsVector(builder, skillsOffsets);
+  // 先序列化每个 Person，返回每个 Person 的 offset
+  const personOffsets: flatbuffers.Offset[] = originalDataList.map(
+    (originalData) => {
+      // 将字符串写入缓冲区，返回偏移量
+      const nameOffset = builder.createString(originalData.name);
+      const emailOffset = builder.createString(originalData.email);
+      /**
+       * 在 FlatBuffers 中，数组类型（如 [string]）不能直接作为字段赋值，必须先通过 builder 创建一个“向量”（vector），然后再把这个向量的 offset 赋给表字段。
+       * -------------------------------------------------
+       * skills 字段在 schema 里定义为 [string]，即字符串数组。
+       * 需要先用 builder.createString(skill) 把每个字符串写入缓冲区，得到每个字符串的 offset。
+       * 然后用 MyGame.Person.createSkillsVector(builder, skillsOffsets) 把这些 offset 组成一个向量（vector），返回向量的 offset。
+       * 最后用 MyGame.Person.addSkills(builder, skillsVector) 把向量 offset 赋值给 skills 字段。
+       */
+      // skills 是字符串数组，也要先全部写入缓冲区
+      const skillsOffsets = originalData.skills.map((skill) =>
+        builder.createString(skill)
+      );
+      // 创建 skills 向量
+      const skillsVector = MyGame.Person.createSkillsVector(
+        builder,
+        skillsOffsets
+      );
+      // 创建 location 对象
+      const locationOffset = MyGame.Location.createLocation(
+        builder,
+        originalData.location.latitude,
+        originalData.location.longitude
+      );
 
-  // 创建地理位置结构体
-  const locationOffset = MyGame.Location.createLocation(
-    builder,
-    originalData.location.latitude,
-    originalData.location.longitude
+      // 开始构建 Person 对象
+      MyGame.Person.startPerson(builder);
+      MyGame.Person.addId(builder, BigInt(originalData.id));
+      MyGame.Person.addName(builder, nameOffset);
+      MyGame.Person.addEmail(builder, emailOffset);
+      MyGame.Person.addAge(builder, originalData.age);
+      MyGame.Person.addHeight(builder, originalData.height);
+      MyGame.Person.addIsVerified(builder, originalData.isVerified);
+      MyGame.Person.addSkills(builder, skillsVector);
+      MyGame.Person.addLocation(builder, locationOffset);
+
+      // 结束当前 Person 对象的构建，并返回该对象在 FlatBuffer 缓冲区中的偏移量（offset）。
+      return MyGame.Person.endPerson(builder);
+    }
   );
 
-  // 构建 Person 对象
-  MyGame.Person.startPerson(builder);
-  MyGame.Person.addId(builder, BigInt(originalData.id)); // id 需转为 BigInt
-  MyGame.Person.addName(builder, nameOffset);
-  MyGame.Person.addEmail(builder, emailOffset);
-  MyGame.Person.addAge(builder, originalData.age);
-  MyGame.Person.addHeight(builder, originalData.height);
-  MyGame.Person.addIsVerified(builder, originalData.isVerified);
-  MyGame.Person.addSkills(builder, skillsVector);
-  MyGame.Person.addLocation(builder, locationOffset);
-  // 完成构建并获取数据
-  const personOffset = MyGame.Person.endPerson(builder);
-  builder.finish(personOffset);
+  // 创建 persons 向量
+  const personsVector = MyGame.PersonList.createPersonsVector(
+    builder,
+    personOffsets
+  );
+  // 构建 PersonList 根对象
+  MyGame.PersonList.startPersonList(builder);
+  MyGame.PersonList.addPersons(builder, personsVector);
+  const root = MyGame.PersonList.endPersonList(builder);
 
-  serializedData.value = builder.asUint8Array(); // 获取最终二进制数据
+  // 通知 FlatBuffers 构建器，序列化流程已经完成，并指定 root 作为根对象的偏移量。
+  builder.finish(root);
+
+  // 获取最终的二进制数据
+  serializedData.value = builder.asUint8Array();
+  // 序列化时间
   performanceResults.serializeTime = performance.now() - startTime;
+  // FlatBuffer 数据大小
   performanceResults.flatbufferSize = serializedData.value.length;
 };
 
 // 从 FlatBuffer 二进制反序列化为对象
 const deserializeFromFlatBuffer = () => {
   if (!serializedData.value) return;
-
   const startTime = performance.now();
+  // 创建 ByteBuffer 读取二进制数据
   const buf = new flatbuffers.ByteBuffer(serializedData.value);
-  const person = MyGame.Person.getRootAsPerson(buf);
+  // 获取根对象
+  const personList = MyGame.PersonList.getRootAsPersonList(buf);
 
-  // 使用对象 API（unpack）简化访问
-  const personObj = person.unpack();
-
-  // 组装反序列化后的对象，便于展示
-  deserializedData.value = {
-    id: personObj.id,
-    name: personObj.name,
-    email: personObj.email,
-    age: personObj.age,
-    height: personObj.height,
-    isVerified: personObj.isVerified,
-    skills: personObj.skills || [],
-    location: {
-      latitude: personObj.location?.latitude || 0,
-      longitude: personObj.location?.longitude || 0,
-    },
-  };
-
+  // 遍历 persons，反序列化为 JS 对象
+  const persons: any[] = [];
+  for (let i = 0; i < personList.personsLength(); i++) {
+    const person = personList.persons(i);
+    // unpack 兼容（flatc 生成的代码可能有 unpack 方法）
+    let obj;
+    if (person) {
+      obj = person.unpack
+        ? person.unpack()
+        : {
+            id: person.id(),
+            name: person.name(),
+            email: person.email(),
+            age: person.age(),
+            height: person.height(),
+            isVerified: person.isVerified(),
+            skills: Array.from({ length: person.skillsLength() }, (_, j) =>
+              person.skills(j)
+            ),
+            location: {
+              latitude: person.location()?.latitude() ?? 0,
+              longitude: person.location()?.longitude() ?? 0,
+            },
+          };
+    } else {
+      obj = null;
+    }
+    persons.push(obj);
+  }
+  deserializedData.value = persons;
   performanceResults.deserializeTime = performance.now() - startTime;
 };
 
 // 序列化为 JSON 字符串
 const serializeToJson = () => {
   const startTime = performance.now();
-  jsonSerialized.value = JSON.stringify(originalData);
+  // 直接序列化整个原始数据数组
+  jsonSerialized.value = JSON.stringify(originalDataList);
   performanceResults.jsonSerializeTime = performance.now() - startTime;
   performanceResults.jsonSize = new Blob([jsonSerialized.value]).size;
 };
@@ -142,6 +175,7 @@ const deserializeFromJson = () => {
   if (!jsonSerialized.value) return;
 
   const startTime = performance.now();
+  // 直接 parse 整个字符串
   jsonDeserialized.value = JSON.parse(jsonSerialized.value);
   performanceResults.jsonDeserializeTime = performance.now() - startTime;
 };
@@ -163,17 +197,20 @@ function stringifyWithBigInt(obj: any) {
 
 <template>
   <div class="container">
+    <!-- 页头 -->
     <header class="header">
       <h1>Vue3 + TypeScript FlatBuffers 演示</h1>
       <p>展示高效二进制序列化与 JSON 的性能对比</p>
     </header>
 
     <main class="content">
+      <!-- 原始数据展示 -->
       <section class="data-section">
         <h2>原始数据</h2>
-        <pre class="data-box">{{ originalData }}</pre>
+        <pre class="data-box">{{ originalDataList }}</pre>
       </section>
 
+      <!-- 操作按钮区 -->
       <div class="actions">
         <div class="action-group">
           <h3>FlatBuffers 操作</h3>
@@ -204,12 +241,15 @@ function stringifyWithBigInt(obj: any) {
         </div>
       </div>
 
+      <!-- 结果展示区 -->
       <div class="results">
+        <!-- FlatBuffer 序列化结果 -->
         <div class="result-card">
           <h3>FlatBuffer 序列化结果</h3>
           <div v-if="serializedData" class="result-content">
             <p>大小: {{ performanceResults.flatbufferSize }} 字节</p>
-            <div class="hex-view">
+            <!-- 以十六进制展示二进制内容 -->
+            <div class="hex-view data-box">
               <span
                 v-for="(byte, index) in serializedData"
                 :key="index"
@@ -224,6 +264,7 @@ function stringifyWithBigInt(obj: any) {
           </div>
         </div>
 
+        <!-- FlatBuffer 反序列化结果 -->
         <div class="result-card">
           <h3>FlatBuffer 反序列化结果</h3>
           <pre v-if="deserializedData" class="data-box">{{
@@ -234,6 +275,7 @@ function stringifyWithBigInt(obj: any) {
           </div>
         </div>
 
+        <!-- JSON 序列化结果 -->
         <div class="result-card">
           <h3>JSON 序列化结果</h3>
           <div v-if="jsonSerialized" class="result-content">
@@ -243,6 +285,7 @@ function stringifyWithBigInt(obj: any) {
           <div v-else class="placeholder">点击"序列化为 JSON"按钮生成数据</div>
         </div>
 
+        <!-- JSON 反序列化结果 -->
         <div class="result-card">
           <h3>JSON 反序列化结果</h3>
           <pre v-if="jsonDeserialized" class="data-box">{{
@@ -254,6 +297,7 @@ function stringifyWithBigInt(obj: any) {
         </div>
       </div>
 
+      <!-- 性能对比区 -->
       <section class="performance-section">
         <h2>性能对比</h2>
         <div class="performance-grid">
@@ -295,6 +339,7 @@ function stringifyWithBigInt(obj: any) {
           </div>
         </div>
 
+        <!-- 性能总结 -->
         <div class="performance-summary">
           <div class="summary-item">
             <span class="summary-label">FlatBuffer 大小减少:</span>
@@ -330,6 +375,7 @@ function stringifyWithBigInt(obj: any) {
       </section>
     </main>
 
+    <!-- 页脚 -->
     <footer class="footer">
       <p>FlatBuffers 演示应用 | Vue3 + TypeScript</p>
       <p>FlatBuffers 提供高效的二进制序列化，特别适合高性能应用</p>
